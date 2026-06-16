@@ -4,7 +4,7 @@ import { productsRouter } from './routes/productRouter.js'
 import { authRouter } from './routes/authRouter.js'
 import path from 'path'
 
-const PORT = 8000
+const PORT = process.env.PORT || 8000
 const app = express()
 
 app.use(cors())
