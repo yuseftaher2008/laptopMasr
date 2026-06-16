@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>compile / store</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="nav-root"></div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">Laptops, specced honestly</h1>
+      <p class="page-sub" id="result-count">Loading products…</p>
+    </div>
+
+    <div class="filters">
+      <select id="filter-brand">
+        <option value="">All brands</option>
+      </select>
+      <select id="filter-tag">
+        <option value="">All tags</option>
+        <option value="gaming">gaming</option>
+        <option value="ultrabook">ultrabook</option>
+        <option value="business">business</option>
+        <option value="budget">budget</option>
+        <option value="workstation">workstation</option>
+        <option value="apple">apple</option>
+        <option value="rgb">rgb</option>
+      </select>
+      <input type="number" id="filter-min" class="price-input" placeholder="Min $" />
+      <input type="number" id="filter-max" class="price-input" placeholder="Max $" />
+      <select id="sort-select" class="sort-select">
+        <option value="default">Sort: relevance</option>
+        <option value="price_asc">Price: low to high</option>
+        <option value="price_desc">Price: high to low</option>
+      </select>
+    </div>
+
+    <div id="product-grid" class="product-grid"></div>
+  </div>
+
+  <script type="module" src="js/home.js"></script>
+</body>
+</html>

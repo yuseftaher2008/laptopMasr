@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in · compile / store</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="nav-root"></div>
+
+  <div class="auth-wrap">
+    <h1 class="auth-title" id="auth-title">Sign in</h1>
+    <p class="auth-sub">Sign in to manage products and orders.</p>
+
+    <form id="auth-form">
+      <div id="register-fields" style="display:none">
+        <div class="field">
+          <label for="name">Name</label>
+          <input type="text" id="name" />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" />
+      </div>
+
+      <p class="error-text" id="error-text" style="display:none"></p>
+
+      <button type="submit" class="btn btn-full" id="submit-btn">Sign in</button>
+    </form>
+
+    <p class="auth-switch">
+      <span id="switch-text">No account yet?</span>
+      <span id="switch-link">Register</span>
+    </p>
+  </div>
+
+  <script type="module" src="js/login.js"></script>
+</body>
+</html>
