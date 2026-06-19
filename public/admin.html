@@ -3,8 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin · compile / store</title>
+  <title>Admin · Compile</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script>
+    (function () {
+      var override = localStorage.getItem("theme-override");
+      var theme = override || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
 </head>
 <body>
 

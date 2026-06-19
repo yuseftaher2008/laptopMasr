@@ -9,7 +9,7 @@ const root = document.getElementById("cart-root");
 // Set this to your store's WhatsApp number, country code first, digits only
 // e.g. "201234567890" for an Egyptian number. Leave blank to let WhatsApp
 // ask the user to pick a contact instead.
-const WHATSAPP_NUMBER = "201061218980";
+const WHATSAPP_NUMBER = "";
 
 function escapeHtml(str) {
   const div = document.createElement("div");
