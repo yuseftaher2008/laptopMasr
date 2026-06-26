@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { productsRouter } from './routes/productRouter.js'
 import { authRouter } from './routes/authRouter.js'
+import { configDotenv } from 'dotenv'
 import path from 'path'
 
 const PORT = process.env.PORT || 8000

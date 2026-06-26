@@ -1,20 +1,19 @@
-import { openDb } from "./config/db.js";
-
+import pool from './db.js'
 
 async function createUserTable() {
-    const db = await openDb()
-    try{
-        await db.exec(`CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+    try {
+        await pool.query(`CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             username TEXT NOT NULL UNIQUE,
             email TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
-)`)
+            password TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'customer'
+        )`)
         console.log('users table created')
-    }catch(err){
+    } catch(err) {
         console.log('ERROR creating table', err)
     }
-    
 }
+
 createUserTable()

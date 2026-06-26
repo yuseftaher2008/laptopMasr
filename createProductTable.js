@@ -1,20 +1,20 @@
 
-import { openDb } from "./config/db.js";
+import pool from "./db.js";
 
 
 async function createProductTable() {
-    const db = await openDb()
+
     try{
-        await db.exec(`CREATE TABLE products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+        await pool.query(`CREATE TABLE IF NOT EXISTS products (
+    id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     brand TEXT NOT NULL,
-    price REAL NOT NULL,
+    price NUMERIC NOT NULL,
     cpu TEXT,
     ram INTEGER,
     storage INTEGER,
     gpu TEXT,
-    screen_size REAL,
+    screen_size NUMERIC,
     stock INTEGER DEFAULT 0,
     tags TEXT,
     description TEXT,

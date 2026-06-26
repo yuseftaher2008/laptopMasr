@@ -1,5 +1,5 @@
-import {openDb} from '../config/db.js'
-const db = await openDb()
+import pool from '../db.js'
+
 
 export async function getAllProducts(req, res) {
     const { brand, minPrice, maxPrice, tags } = req.query
@@ -7,26 +7,30 @@ export async function getAllProducts(req, res) {
     try {
         let query = `SELECT * FROM products WHERE 1=1`
         const params = []
-
+        let noOfValues = 0
         if (brand) {
-            query += ` AND brand =?`
+            noOfValues ++
+            query += ` AND brand =$${noOfValues}`
             params.push(brand)
         }
         if (minPrice) {
-            query += ` AND price >=?`
+            noOfValues ++
+            query += ` AND price >=$${noOfValues}`
             params.push(minPrice)
         }
         if (maxPrice) {
-            query += ` AND price <=?`
+            noOfValues ++
+            query += ` AND price <=$${noOfValues}`
             params.push(maxPrice)
         }
         if (tags) {
-            query += ` AND tags LIKE ?`
+            noOfValues ++
+            query += ` AND tags LIKE $${noOfValues}`
             params.push(`%${tags}%`)
         }
 
-        const data = await db.all(query, params)
-        return res.json(data)
+        const data = await pool.query(query, params)
+        return res.json(data.rows)
     } catch (err) {
         return res.status(500).json({ message: 'Server error' })
     }
@@ -35,11 +39,13 @@ export async function getAllProducts(req, res) {
 export async function getProductsById (req,res){
     const {id} = req.params 
     try{
-        const data = await db.get('SELECT * FROM products WHERE id =?',[id])
-        return res.json(data)
-        if (!data) {
+        const data = await pool.query('SELECT * FROM products WHERE id =$1',[id])
+        const result = data.rows[0]
+        
+        if (!result) {
             return res.status(404).json({ message: 'Product not found' })
         }
+     return res.json(result)
 
     }catch(err){
         return res.status(500).json({ message: 'Server error' })
@@ -54,11 +60,11 @@ export async function addProducts (req,res){
         }
         const params = [name,brand,price,cpu,ram,storage,gpu,screen_size,stock,tags,description,image_url]
 
-        const result = await db.run(`INSERT INTO products (name,brand,price,cpu,ram,storage,gpu,screen_size,stock,tags,description,image_url)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,params)
-            const newProduct = await db.get(`SELECT * FROM products WHERE id = ?`, [result.lastID])
-            console.log(`data insered`,newProduct)    
-            return res.status(201).json(newProduct)
+        const result = await pool.query(`INSERT INTO products (name,brand,price,cpu,ram,storage,gpu,screen_size,stock,tags,description,image_url)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id,name,brand,price`,params)
+            
+            console.log(`data insered`,result.rows[0])    
+            return res.status(201).json(result.rows[0])
 
     } catch (err) {
         return res.status(500).json({message :'Server error'})
@@ -70,42 +76,47 @@ export async function addProducts (req,res){
 export async function deleteProducts (req,res) {
     const {id} = req.params
     try {
-        const findProducts = await db.get(`SELECT * FROM products WHERE id =?`,[id])
-        if (!findProducts){
+        const findProducts = await pool.query(`SELECT * FROM products WHERE id =$1`,[id])
+        const result = findProducts.rows[0]
+        if (!result){
             return res.status(404).json({message: 'enter a valid id'})
         }
-        await db.run(`DELETE FROM products WHERE id =?`,[id])
+        await pool.query(`DELETE FROM products WHERE id =$1`,[id])
         res.status(204).send()
     } catch (err) {
         return res.status(500).json({message:"server error"})
     }
 }
 
-export async function updateUser (req,res){
+export async function updateProduct (req,res){
     const fields = req.body
     const {id} = req.params
     const setClauses = []
+    let noOfValues = 0
     const params = []
     const allowedFields = ['name','brand','price','cpu','ram','storage','gpu','screen_size','stock','tags','description','image_url']
     try {
-        const product = await db.get(`SELECT * FROM products WHERE id = ?`,[id])
-        if(!product){
+        const product = await pool.query(`SELECT * FROM products WHERE id = $1`,[id])
+        const result = product.rows[0]
+        if(!result){
             return res.status(404).json({message:'invalid product id'})
         }
         for(const field of allowedFields){
             if(fields[field] !== undefined){
-                setClauses.push(`${field} =?`)
+                noOfValues ++ 
+                setClauses.push(`${field} =$${noOfValues}`)
                 params.push(fields[field])
             }
         }
             if(setClauses.length === 0){
                 return res.status(400).json({message:'nothing to update'})
             }
-            const query = `UPDATE products SET ${setClauses.join(', ')} WHERE id = ?`
+            noOfValues ++
+            let query = `UPDATE products SET ${setClauses.join(', ')} WHERE id = ${noOfValues}`
             params.push(id)
-            await db.run(query,params)
-            const updatedProduct = await db.get(`SELECT * FROM products WHERE id = ?`, [id])
-            return res.json(updatedProduct)
+            query += ` RETURNING id,name,brand,price`
+            const updatedProduct = await pool.query(query,params)
+            return res.json(updatedProduct.rows[0])
     }catch(err){
         return res.status(500).json({message:'Server error'})
     }
