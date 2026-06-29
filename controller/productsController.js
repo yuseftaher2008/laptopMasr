@@ -1,4 +1,7 @@
 import pool from '../db.js'
+import { validationResult } from 'express-validator'
+
+
 
 
 export async function getAllProducts(req, res) {
@@ -54,10 +57,12 @@ export async function getProductsById (req,res){
 
 export async function addProducts (req,res){
     const {name,brand,price,cpu,ram,storage,gpu,screen_size,stock,tags,description,image_url} = req.body
-    try {
-        if (!name || !brand || !price ){
-            return res.status(400).json({message : `name,price,brand fileds are required`})
-        }
+    
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
+    }try {
+
         const params = [name,brand,price,cpu,ram,storage,gpu,screen_size,stock,tags,description,image_url]
 
         const result = await pool.query(`INSERT INTO products (name,brand,price,cpu,ram,storage,gpu,screen_size,stock,tags,description,image_url)
