@@ -1,10 +1,12 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
 import { productsRouter } from './routes/productRouter.js'
 import { authRouter } from './routes/authRouter.js'
-import 'dotenv/config'
-import path from 'path'
 import { cartRouter } from './routes/cartRouter.js'
+import { orderRouter } from './routes/orderRouter.js'
+
 
 const PORT = process.env.PORT || 8000
 const app = express()
@@ -17,7 +19,8 @@ app.use(express.json())
 app.use('/api/products', productsRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/cart',cartRouter)
+app.use('/api/order',orderRouter)
 
 app.listen(PORT , ()=> {
     console.log(`Server is runing on port: ${PORT}`)
-})
+})  

@@ -2,14 +2,19 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import  pool  from '../db.js'
+import { validationResult } from 'express-validator'
+
 
 
 
 export async function userRegister (req,res){
-    let {name,username,email,password} = req.body
-    if (!name || !username || !email || !password){
-        return res.status(400).json({message:'All fields are required'})
+
+    let {name,username,email,password} = req.body    
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
     }
+
     username = username.trim()
     email = email.trim()
     try{
@@ -34,8 +39,10 @@ export async function userRegister (req,res){
 
 export async function loginUser (req,res) {
     const {username , password} = req.body
-    if(!username || !password){
-        return res.status(400).json({message:'All fields are required'})
+    const errors = validationResult(req)
+    
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
     }
     try{
         const findUser = await pool.query(`SELECT * FROM users WHERE username =$1`,[username])

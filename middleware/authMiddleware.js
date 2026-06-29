@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import 'dotenv/config'
 
 export function protect(req, res, next) {
     const authHeader = req.headers.authorization
