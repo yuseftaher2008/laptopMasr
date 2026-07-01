@@ -14,7 +14,7 @@ const app = express()
 app.use(cors())
 
 
-app.use(express.static(path.join(process.cwd(), 'public')))
+app.use(express.static(path.join(process.cwd(), 'view')))
 app.use(express.json())
 app.use('/api/products', productsRouter)
 app.use('/api/auth', authRouter)

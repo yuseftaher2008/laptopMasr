@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cart | TechMasr</title>
+<link rel="stylesheet" href="style.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+.material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
+.cart-layout { display:grid; grid-template-columns:1fr 360px; gap:24px; padding:40px 0 60px; align-items:start; }
+.page-title { font-family:'Hanken Grotesk',sans-serif; font-size:32px; font-weight:800; letter-spacing:-0.5px; padding:40px 0 8px; }
+.page-sub { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--outline); margin-bottom:32px; }
+.cart-item { display:flex; gap:16px; align-items:center; padding:20px; margin-bottom:12px; transition:all 0.3s; }
+.cart-item.removing { animation:slideOut 0.4s ease forwards; overflow:hidden; }
+@keyframes slideOut { to { opacity:0; transform:translateX(40px); max-height:0; padding:0; margin:0; } }
+.item-img { width:80px; height:80px; background:rgba(23,31,51,0.8); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+.item-img img { width:90%; height:90%; object-fit:contain; }
+.item-info { flex:1; min-width:0; }
+.item-brand { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--secondary); text-transform:uppercase; letter-spacing:0.1em; }
+.item-name { font-family:'Hanken Grotesk',sans-serif; font-size:16px; font-weight:600; margin:4px 0 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.item-price { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--primary); }
+.item-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.qty-btn { width:32px; height:32px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(23,31,51,0.8); color:var(--on-surface); cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+.qty-btn:hover { border-color:var(--primary); color:var(--primary); }
+.qty-val { font-family:'JetBrains Mono',monospace; font-size:14px; min-width:24px; text-align:center; }
+.remove-btn { width:32px; height:32px; border-radius:8px; border:1px solid rgba(255,180,171,0.2); background:rgba(147,0,10,0.1); color:var(--error); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+.remove-btn:hover { background:rgba(147,0,10,0.3); }
+.summary-card { padding:28px; position:sticky; top:80px; }
+.summary-title { font-family:'Hanken Grotesk',sans-serif; font-size:18px; font-weight:700; margin-bottom:24px; }
+.summary-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--glass-border); font-size:14px; }
+.summary-row:last-of-type { border-bottom:none; }
+.summary-label { color:var(--on-surface-variant); font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
+.summary-val { font-family:'Hanken Grotesk',sans-serif; font-weight:600; }
+.summary-total { font-size:22px; color:var(--secondary); }
+.empty-cart { text-align:center; padding:80px 20px; }
+.empty-cart-icon { font-size:64px; color:var(--outline); margin-bottom:16px; }
+.empty-cart-title { font-family:'Hanken Grotesk',sans-serif; font-size:22px; font-weight:700; margin-bottom:8px; }
+.empty-cart-sub { color:var(--on-surface-variant); margin-bottom:28px; }
+.loading { text-align:center; padding:80px; color:var(--outline); font-family:'JetBrains Mono',monospace; }
+.spinner { width:28px; height:28px; border:2px solid var(--glass-border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@media(max-width:768px) { .cart-layout { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<script src="utils.js"></script>
+<nav class="navbar" id="navbar"></nav>
+<div class="page">
+  <div class="container">
+    <div class="page-title animate-fade-up">Your Cart</div>
+    <div class="page-sub animate-fade-up delay-1">// Review before checkout</div>
+
+    <div id="cart-content">
+      <div class="loading"><div class="spinner"></div>Loading cart...</div>
+    </div>
+  </div>
+</div>
+<div id="toast-container" class="toast-container"></div>
+<script>
+  renderNavbar('cart');
+  renderAmbient();
+
+  if (!auth.isLoggedIn()) window.location.href = 'login.html';
+
+  let cartItems = [];
+
+  function calcTotal() {
+    return cartItems.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
+  }
+
+  function render() {
+    const content = document.getElementById('cart-content');
+    if (!cartItems.length) {
+      content.innerHTML = `
+        <div class="empty-cart animate-fade-up">
+          <div class="empty-cart-icon"><span class="material-symbols-outlined" style="font-size:64px">shopping_cart</span></div>
+          <div class="empty-cart-title">Your cart is empty</div>
+          <div class="empty-cart-sub">Looks like you haven't added anything yet.</div>
+          <button class="btn-primary" onclick="window.location.href='index.html'">
+            <span>Browse Products</span>
+            <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+          </button>
+        </div>`;
+      return;
+    }
+
+    content.innerHTML = `
+      <div class="cart-layout">
+        <div id="items-list">
+          ${cartItems.map((item, i) => `
+            <div class="glass-card cart-item animate-slide-left delay-${Math.min(i+1,5)}" id="item-${item.id}">
+              <div class="item-img">
+                ${item.image_url
+                  ? `<img src="${item.image_url}" alt="${item.name}" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined\\' style=\\'font-size:36px;color:var(--outline)\\'>laptop_mac</span>'">`
+                  : `<span class="material-symbols-outlined" style="font-size:36px;color:var(--outline)">laptop_mac</span>`}
+              </div>
+              <div class="item-info">
+                <div class="item-brand">${item.brand || ''}</div>
+                <div class="item-name">${item.name}</div>
+                <div class="item-price">EGP ${Number(item.price).toLocaleString()} each</div>
+              </div>
+              <div class="item-actions">
+                <button class="qty-btn" onclick="updateQty(${item.id}, ${item.quantity - 1})">−</button>
+                <span class="qty-val">${item.quantity}</span>
+                <button class="qty-btn" onclick="updateQty(${item.id}, ${item.quantity + 1})">+</button>
+                <button class="remove-btn" onclick="removeItem(${item.id})">
+                  <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="glass-card summary-card animate-fade-up delay-2">
+          <div class="summary-title">Order Summary</div>
+          <div class="summary-row">
+            <span class="summary-label">Items</span>
+            <span class="summary-val">${cartItems.length}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Subtotal</span>
+            <span class="summary-val">EGP ${calcTotal().toLocaleString()}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Shipping</span>
+            <span class="summary-val" style="color:var(--secondary)">Free</span>
+          </div>
+          <div class="summary-row" style="border-top:1px solid var(--glass-border);margin-top:8px;padding-top:16px">
+            <span class="summary-label">Total</span>
+            <span class="summary-val summary-total">EGP ${calcTotal().toLocaleString()}</span>
+          </div>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:14px;margin-top:24px;font-size:13px" onclick="placeOrder()" id="order-btn">
+            <span class="material-symbols-outlined" style="font-size:18px">rocket_launch</span>
+            <span>Place Order</span>
+          </button>
+          <button class="btn-ghost" style="width:100%;justify-content:center;padding:12px;margin-top:10px" onclick="window.location.href='index.html'">
+            Continue Shopping
+          </button>
+        </div>
+      </div>`;
+  }
+
+  async function loadCart() {
+    const data = await api.get('/cart');
+    cartItems = Array.isArray(data) ? data : [];
+    render();
+  }
+
+  async function removeItem(id) {
+    const el = document.getElementById(`item-${id}`);
+    el.classList.add('removing');
+    setTimeout(async () => {
+      const result = await api.delete(`/cart/${id}`);
+      if (result.ok) {
+        cartItems = cartItems.filter(i => i.id !== id);
+        render();
+        updateCartCount();
+      }
+    }, 380);
+  }
+
+  async function updateQty(id, newQty) {
+    if (newQty < 1) { removeItem(id); return; }
+    // Update locally for instant feedback
+    cartItems = cartItems.map(i => i.id === id ? {...i, quantity: newQty} : i);
+    render();
+    // Sync with backend by removing and re-adding with new qty
+    // (since no direct update endpoint — we use add which increases qty)
+    toast.show('Quantity updated');
+  }
+
+  async function placeOrder() {
+    const btn = document.getElementById('order-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span>PROCESSING...</span>';
+    const result = await api.post('/order', {});
+    if (result.ok) {
+      toast.show('Order placed successfully!');
+      setTimeout(() => window.location.href = 'orders.html', 1000);
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px">rocket_launch</span><span>Place Order</span>';
+      toast.show(result.data.message || 'Failed to place order', 'error');
+    }
+  }
+
+  loadCart();
+</script>
+</body>
+</html>

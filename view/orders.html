@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>My Orders | TechMasr</title>
+<link rel="stylesheet" href="style.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+.material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
+.page-header { padding:40px 0 32px; }
+.page-title { font-family:'Hanken Grotesk',sans-serif; font-size:32px; font-weight:800; letter-spacing:-0.5px; }
+.page-sub { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--outline); margin-top:6px; }
+.order-card { margin-bottom:12px; overflow:hidden; }
+.order-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px; cursor:pointer; transition:background 0.2s; }
+.order-header:hover { background:rgba(255,255,255,0.03); }
+.order-id { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--primary); }
+.order-meta { display:flex; align-items:center; gap:20px; }
+.order-date { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--outline); }
+.order-total { font-family:'Hanken Grotesk',sans-serif; font-size:16px; font-weight:700; }
+.order-chevron { color:var(--outline); transition:transform 0.3s; font-size:20px; }
+.order-card.open .order-chevron { transform:rotate(180deg); }
+.order-items { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1); border-top:0 solid var(--glass-border); }
+.order-card.open .order-items { max-height:600px; border-top-width:1px; }
+.order-item { display:flex; align-items:center; gap:14px; padding:14px 24px; border-bottom:1px solid var(--glass-border); }
+.order-item:last-child { border-bottom:none; }
+.item-img-sm { width:48px; height:48px; background:rgba(23,31,51,0.8); border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+.item-img-sm img { width:90%; height:90%; object-fit:contain; }
+.item-name-sm { font-size:14px; font-weight:500; }
+.item-detail { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--outline); margin-top:3px; }
+.empty { text-align:center; padding:80px 20px; }
+.empty-title { font-family:'Hanken Grotesk',sans-serif; font-size:22px; font-weight:700; margin-bottom:8px; }
+.empty-sub { color:var(--on-surface-variant); margin-bottom:28px; }
+.loading { text-align:center; padding:80px; color:var(--outline); font-family:'JetBrains Mono',monospace; }
+.spinner { width:28px; height:28px; border:2px solid var(--glass-border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<script src="utils.js"></script>
+<nav class="navbar" id="navbar"></nav>
+<div class="page">
+  <div class="container">
+    <div class="page-header animate-fade-up">
+      <div class="page-title">My Orders</div>
+      <div class="page-sub">// Order history and tracking</div>
+    </div>
+    <div id="orders-content">
+      <div class="loading"><div class="spinner"></div>Loading orders...</div>
+    </div>
+  </div>
+</div>
+<div id="toast-container" class="toast-container"></div>
+<script>
+  renderNavbar('orders');
+  renderAmbient();
+
+  if (!auth.isLoggedIn()) window.location.href = 'login.html';
+
+  function statusBadge(status) {
+    const map = {
+      pending: 'badge-pending',
+      confirmed: 'badge-confirmed',
+      shipped: 'badge-shipped',
+      delivered: 'badge-delivered'
+    };
+    return `<span class="badge ${map[status] || 'badge-pending'}">${status}</span>`;
+  }
+
+  function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('en-EG', { year:'numeric', month:'short', day:'numeric' });
+  }
+
+  function toggleOrder(id) {
+    const card = document.getElementById(`order-${id}`);
+    card.classList.toggle('open');
+    if (card.classList.contains('open') && !card.dataset.loaded) {
+      loadOrderItems(id);
+      card.dataset.loaded = 'true';
+    }
+  }
+
+  async function loadOrderItems(orderId) {
+    const container = document.getElementById(`items-${orderId}`);
+    container.innerHTML = `<div style="padding:20px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--outline)">Loading items...</div>`;
+    const data = await api.get(`/order/${orderId}`);
+    const items = Array.isArray(data) ? data : [];
+    if (!items.length) {
+      container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--outline);font-size:13px">No items found</div>`;
+      return;
+    }
+    container.innerHTML = items.map(item => `
+      <div class="order-item">
+        <div class="item-img-sm">
+          ${item.image_url
+            ? `<img src="${item.image_url}" alt="${item.name}" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined\\' style=\\'font-size:24px;color:var(--outline)\\'>laptop_mac</span>'">`
+            : `<span class="material-symbols-outlined" style="font-size:24px;color:var(--outline)">laptop_mac</span>`}
+        </div>
+        <div style="flex:1">
+          <div class="item-name-sm">${item.name || 'Product'}</div>
+          <div class="item-detail">Qty: ${item.quantity} × EGP ${Number(item.price).toLocaleString()}</div>
+        </div>
+        <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:15px">
+          EGP ${(item.quantity * Number(item.price)).toLocaleString()}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function loadOrders() {
+    const content = document.getElementById('orders-content');
+    const data = await api.get('/order');
+    const orders = Array.isArray(data) ? data : [];
+
+    if (!orders.length) {
+      content.innerHTML = `
+        <div class="empty animate-fade-up">
+          <div style="font-size:64px;margin-bottom:16px"><span class="material-symbols-outlined" style="font-size:64px;color:var(--outline)">receipt_long</span></div>
+          <div class="empty-title">No orders yet</div>
+          <div class="empty-sub">Once you place an order, it'll show up here.</div>
+          <button class="btn-primary" onclick="window.location.href='index.html'">
+            <span>Start Shopping</span>
+            <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+          </button>
+        </div>`;
+      return;
+    }
+
+    content.innerHTML = orders.map((order, i) => `
+      <div class="glass-card order-card animate-fade-up delay-${Math.min(i+1,5)}" id="order-${order.id}">
+        <div class="order-header" onclick="toggleOrder(${order.id})">
+          <div>
+            <div class="order-id">#TM-${String(order.id).padStart(4,'0')}</div>
+            <div class="order-date" style="margin-top:4px">${formatDate(order.created_at)}</div>
+          </div>
+          <div class="order-meta">
+            ${statusBadge(order.status)}
+            <div class="order-total">EGP ${Number(order.total).toLocaleString()}</div>
+            <span class="material-symbols-outlined order-chevron">expand_more</span>
+          </div>
+        </div>
+        <div class="order-items" id="items-${order.id}"></div>
+      </div>
+    `).join('');
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>
